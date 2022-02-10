@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#PBS -q normal
+#PBS -l nodes=4:ppn=8
+#PBS -l walltime=48:00:00
+#PBS -N _bukidaupdate
+#PBS -j oe
+#PBS -m ae
+#PBS -M egyllenhaal@unm.edu
+
+# By: Ethan Gyllenhaal
+# Last updated: 9 February 2022
+# Torque batch script for running msprime simulations
+# First block is the Choiseul/Isabel comparison.
+# Second block is the Isabel/Guadalcanal comparison.
+# Density list for the latter was made based on the best-match density of the first.
+# Assume output directories are made (output/Choiseul_Isabel and output/Isabel_Guadalcanal)
+
+# Load env_parallel and conda environment
+module load parallel/20210922-cfec
+source $(which env_parallel.bash)
+
+module load miniconda3/4.10.3-an4v
+source activate msp1-env
+
+# Set working directory shortcut
+dir=$PBS_O_WORKDIR
+
+# Choiseul/Isabel block
+while IFS=, read dens1 dens2; do
+	# Header of output file
+      echo -e 'Size1\tSize2\tDivtime\tFst\tDiversity1\tDiversity2' \
+	   > $dir/output/Choiseul_Isabel/d${dens1}_d${dens2}.out
+	  # GNU parallel call, with densities pulled from the density list
+	  # 8 jobs per node, 30 reps
+      env_parallel -j 8 --sshloginfile $PBS_NODEFILE \
+	     'echo {}; python $dir/bukida_msp.py \
+             -i1 Choiseul -i2 Isabel -d1 ${dens1} -d2 ${dens2} -t 4706 \
+             -o $dir/output/Choiseul_Isabel/d${dens1}_d${dens2}.out' ::: {1..30}
+done < $dir/density_list_ChIs
+
+# Isabel/Guadalcanal, same structure as above
+while IFS=, read dens1 dens2; do
+      echo -e 'Size1\tSize2\tDivtime\tFst\tDiversity1\tDiversity2' \
+           > $dir/Isabel_Guadalcanal/d${dens1}_d${dens2}.out
+      env_parallel -j 8 --sshloginfile $PBS_NODEFILE \
+             'echo {}; python $dir/bukida_msp.py \
+             -i1 Isabel -i2 Guadalcanal -d1 ${dens1} -d2 ${dens2} -t 6274 \
+             -o $dir/output/Isabel_Guadalcanal/d${dens1}_d${dens2}.out' ::: {1..30}
+done < $dir/density_list_IsGu

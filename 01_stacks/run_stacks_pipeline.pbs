@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#PBS -q normal
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=48:00:00
+#PBS -N solosympos
+#PBS -j oe
+#PBS -m ae
+#PBS -M egyllenhaal@unm.edu
+
+# By: Ethan Gyllenhaal
+# Last updated: 9 February 2022
+# Torque batch script for running Stacks in a reference-based assembly approach
+# process_radtags is not included here, but command looked like: 
+# process_radtags -f /path/to.fastq.gz -b /path/to/barcodes -o path/to/radseq_demulti/ \
+#	-i gzfastq -e ndeI -c -q -r -E phred33 
+
+# Loading modules (names are now out of date on wheeler)
+module load stacks-2.41-gcc-7.4.0-7r6auk7
+module load bwa-0.7.17-intel-18.0.2-7jvpfu2
+module load samtools-1.10-gcc-9.3.0-python3-ikifznw
+
+# Variable to represent working directory
+src=$PBS_O_WORKDIR
+# path to New Caledonia Crow reference downloaded from NCBI: 
+bwa_db=$src/NewCalCrow_reference
+
+### Alignment section
+
+## Index fasta
+bwa index -p $src/NewCalCrow_reference $src/NewCalCrow_reference.fna
+
+## Align
+## takes in a sample list of all samples
+
+while read indiv
+do
+	# pipe wasn't working well for some reason, so intermediate files were used instead
+	echo ${indiv}
+	bwa mem -t 8 $bwa_db $src/raw_reads/${indiv}.fq.gz > $src/sam_files/${indiv}.sam &&
+	samtools view -bS $src/sam_files/${indiv}.sam > $src/bam_files/${indiv}_unsort.bam &&
+	echo "${indiv} converted to bam" &&
+	samtools sort  $src/bam_files/${indiv}_unsort.bam -o $src/bam_files/${indiv}.bam &&
+	echo "${indiv} sorted" &&
+	rm $src/sam_files/${indiv}.sam &&
+	rm $src/bam_files/${indiv}_unsort.bam
+done < $src/sample_list
+
+### Stacks section
+
+## Giant chunk of running gstacks and populations for subsets of the data
+## Note that output files may not exactly match names of Dryad/Github input files
+## I tried to remove lines making unused files, but may've missed some
+
+### running gstacks and populations for ingroup (Solomon Islands)
+gstacks -I $src/bam_files/ -M $src/popmaps/popmap_solo -O $src/stacks_out/solo/ -t 8
+populations -P $src/stacks_out/solo -M $src/popmaps/popmap_solo -O $src/populations/pop_75per_solo --vcf -R .75 --write-random-snp --smooth -t 8
+mv $src/populations/pop_75per_solo/populations.snps.vcf $src/populations/outputs/solsym_solomons_75.vcf
+
+### running gstacks and populations for Bukida
+gstacks -I $src/bam_files/ -M $src/popmaps/popmap_bukida -O $src/stacks_out/bukida/ -t 8
+populations -P $src/stacks_out/bukida/ -M $src/popmaps/popmap_bukida -O $src/populations/pop_75per_bukida --write-random-snp --vcf -R .75 --smooth -t 8
+mv $src/populations/pop_75per_bukida/populations.snps.vcf $src/populations/outputs/solsym_bukida_75.vcf
+
+### running gstacks and populations for NG
+gstacks -I $src/bam_files/ -M $src/popmaps/popmap_NG -O $src/stacks_out/NG/ -t 8
+populations -P $src/stacks_out/NG/ -M $src/popmaps/popmap_NG -O $src/populations/pop_75per_NG -R .75 --min-mac 2 --plink -t 8
+populations -P $src/stacks_out/NG/ -M $src/popmaps/popmap_NG -O $src/populations/pop_75per_NG --vcf -R .75  --write-random-snp --smooth -t 8
+mv $src/populations/pop_75per_NG/populations.snps.vcf $src/populations/outputs/solsym_NG_75.vcf
+mv $src/populations/pop_75per_NG/populations.plink.ped $src/populations/outputs/solsym_NG_75.ped
+mv $src/populations/pop_75per_NG/populations.plink.map $src/populations/outputs/solsym_NG_75.map
+
+### running gstacks and populations with outgroup
+gstacks -I $src/bam_files/ -M $src/popmaps/popmap_full -O $src/stacks_out/full/ -t 8
+populations -P $src/stacks_out/full -M $src/popmaps/popmap_full_strict -O $src/populations/pop_75per_full_indiv -R .75 --phylip-var-all -t 8
+populations -P $src/stacks_out/full -M $src/popmaps/popmap_full -O $src/populations/pop_75per_full --vcf -R .75 --write-random-snp --smooth -t 8
+mv $src/populations/pop_75per_full_indiv/populations.all.phylip $src/populations/outputs/solsym_full_75.phylip
+mv $src/populations/pop_75per_full/populations.snps.vcf $src/populations/outputs/solsym_full_75.vcf
+
+### SNAPP input
+populations -P $src/stacks_out/full -M $src/popmaps/snapp_limit_out -O $src/populations/snapp95_limit --vcf -R .95 --write-random-snp -t 8
+mv $src/populations/snapp95_limit/populations.snps.vcf $src/populations/outputs/solsym_snapp95_limit.vcf

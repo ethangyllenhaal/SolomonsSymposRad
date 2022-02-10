@@ -1,0 +1,26 @@
+#NEXUS 
+
+Begin trees;  [Treefile saved Wed Aug 04 20:04:29 2021]
+[!
+>Data file = solo_triv_75.nex
+]
+	Translate
+		1 Choiseul,
+		2 Guadalcanal,
+		3 Isabel,
+		4 Ngella,
+		5 Shortlands,
+		6 Malaita,
+		7 Kohinggo,
+		8 Kolombangra,
+		9 NewGeorgia,
+		10 Ranongga,
+		11 Ranongga_hybrid,
+		12 Rendova,
+		13 Tetepare,
+		14 Vella,
+		15 Makira,
+		16 trivirgatus
+		;
+tree 'PAUP_1' = [&U] (1:100,(((2:100,4:100):100,((6:100,(15:100,16:100):98):40,((((7:100,9:100):72,8:100):71,(12:100,13:100):100):100,((10:100,14:100):100,11:100):92):100):100):65,3:100):100,5:100);
+End;
