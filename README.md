@@ -10,8 +10,6 @@ This README describes the scripts and data files used for the afforementioned pr
 
 _______________________________
 ------- Stacks pipeline -------
-------- (01_stacks.zip) -------
-_______________________________
 
 run_stacks_pipeline.pbs - Torque submission script used to run the pipeline. It was very quick, using only a single 8-core node for <10 hours. Made to run on UNM's Center for Advanced Research Computing's Wheeler cluster.
 
@@ -19,8 +17,6 @@ popmaps directory - Directory of population maps used to make subset input files
 
 _______________________________
 ------ PCAs with Adegenet -----
------- (02_adegenet.zip) ------
-_______________________________
 
 SoloSympos_PCA.R - R script for the 3 PCAs in the paper (resulting in 4 figures), with the first one walking through the process in detail. The Bukida PCA is in Figure 2. The other PCAs are in Figure S1.
 
@@ -28,8 +24,6 @@ $$$solsym_\*_75.vcf - 75% complete VCF files for subsets of the data (all Solomo
 
 _______________________________
 ---------- Admixture ----------
------ (03_admixture.zip) ------
-_______________________________
 
 solsym_admixture_plot.R - R script for plotting Admixture results. Output used in Figure 3.
 
@@ -40,8 +34,6 @@ $$$solsym_NG_75.* - Plink input files from Stacks, with 75% completeness for New
 $$$solsym_NG_75_12.* - Plink files from prior line converted to 12 format for use in Admixture.
 _______________________________
 --------- Pairwise Fst --------
----- (04_pairwise_Fst.zip) ----
-_______________________________
 
 pairwise_Fst_vcftools.sh - Shell script used for calculating pairwise Fst between all Solomons population using VCFtools. Output used in Table 1.
 
@@ -50,8 +42,6 @@ pops directory - Files used to specify populations.
 $$$solsym_solomons_75.vcf - 75% complete VCF file for Solomons subset of data.
 _______________________________
 ----- RAxML and SVDQuartet ----
------ (05_raxml_svdq.zip) -----
-_______________________________
 
 NOTE: These analyses were run with the PAUP GUI (SVDQ) and Cipres (RAxML). Output in Figure 4 and Figure S2.
 
@@ -65,8 +55,6 @@ $$$solomons_triv_SVDQ_75.nex - SVDQuartets input modified from RAxML phylip with
 
 _______________________________
 ------------ SNAPP ------------
-------- (06_SNAPP.zip) --------
-_______________________________
 
 NOTE: Some steps were run with the Beauti GUI. Output in Figure 4.
 
@@ -83,8 +71,6 @@ $$$solsym_limit95.xml - Beast XML input file. Simply run with the line: beast -t
 $$$snap_limit95.trees - All trees from the SNAPP run.
 _______________________________
 ------- UCEs Phylogenies ------
--------- (07_UCEs.zip) --------
-_______________________________
 
 NOTE: Phylogenetic analyses were run with the PAUP GUI (SVDQ) and Cipres (RAxML). Output in Figure 4.
 
@@ -105,8 +91,6 @@ $$$sympos_uce_raxml_90.phylip - 90% complete phylip file used for RAxML analysis
 sympos_uce_raxml.tre - Tree produced by RAxML, combining samples by population.
 _______________________________
 ------------ DSuite -----------
-------- (08_DSuite.zip) -------
-_______________________________
 
 NOTE: The topologies and popmaps have 6 consistent name corresponding to subfigures in Figure S3. A = main, B = noMal, C = conservative, D = conservative_noMal, E = malbar F = malbar_conservative.
 
@@ -117,8 +101,6 @@ fbranch_topologies/* - Topologies used for fbranch.
 pop_maps/* - Population maps used for the runs.
 _______________________________
 ----------- msprime -----------
------- (09_msprime.zip) -------
-_______________________________
 
 msprime_bukida.pbs - Torque submission script used for running msprime simulations. Note that the first chunk (Choiseul/Isabel) was run, followed by the second (i.e., density list for second is dependent on results for first). Output in Figure 2.
 
@@ -131,8 +113,6 @@ density_list_ChIs - Density list used for Choiseul and Isabel comparison.
 density_list_IsGu - Density list used for Isabel and Guadalcanal comparison.
 _______________________________
 ----- Photos of intergrade ----
-------- (10_photos.zip) -------
-_______________________________
 
 All of these are photos of the intergrade (center), Ranongga samples (left two), and Kolombangara samples (right two).
 
