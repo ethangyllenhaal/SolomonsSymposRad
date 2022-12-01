@@ -7,6 +7,7 @@ This README describes the scripts and data files used for the afforementioned pr
 
 _______________________________
 ------- Stacks pipeline -------
+
 --------- (01_stacks) ---------
 _______________________________
 
@@ -16,6 +17,7 @@ popmaps directory - Directory of population maps used to make subset input files
 
 _______________________________
 ------ PCAs with Adegenet -----
+
 -------- (02_adegenet) --------
 _______________________________
 
@@ -25,6 +27,7 @@ $$$solsym_*_75.vcf - 75% complete VCF files for subsets of the data (all Solomon
 
 _______________________________
 ---------- Admixture ----------
+
 ------- (03_admixture) --------
 _______________________________
 
@@ -38,6 +41,7 @@ $$$solsym_NG_75_12.* - Plink files from prior line converted to 12 format for us
 
 _______________________________
 ---- Confirming intergrade ----
+
 --- (04_confirm_intergrade) ---
 _______________________________
 
@@ -53,6 +57,7 @@ $$$solsym_solomons_75.vcf - 75% complete VCF file for Solomons subset of data.
 run_interspecific_het.sh - Main script, first uses VCFtools and unix commands to find fixed SNPs (between the combined Kolombangara etc and Vella/Ranongga populations), then limits input VCF to those SNPs, then does some unix math so calculate proportion of heterozygotes for the focal individual at those sites. Comparable to what the program introgression calculates.
 _______________________________
 --------- Pairwise Fst --------
+
 ------ (05_pairwise_Fst) ------
 _______________________________
 
@@ -63,6 +68,7 @@ pops directory - Files used to specify populations.
 $$$solsym_solomons_75.vcf - 75% complete VCF file for Solomons subset of data.
 _______________________________
 ----- RAxML and SVDQuartet ----
+
 ------- (06_raxml_svdq) -------
 _______________________________
 
@@ -78,6 +84,7 @@ $$$solomons_triv_SVDQ_75.nex - SVDQuartets input modified from RAxML phylip with
 
 _______________________________
 ------------ SNAPP ------------
+
 --------- (07_SNAPP) ----------
 _______________________________
 
@@ -100,6 +107,7 @@ $$$snapp*.trees - The first N trees from a given SNAPP run (resuming continues p
 treeanno_*.tre - TreeAnnotator summary trees.
 _______________________________
 ------- UCEs Phylogenies ------
+
 ---------- (08_UCEs) ----------
 _______________________________
 
@@ -122,6 +130,7 @@ $$$sympos_uce_raxml_90.phylip - 90% complete phylip file used for RAxML analysis
 sympos_uce_raxml.tre - Tree produced by RAxML, combining samples by population.
 _______________________________
 ------------ DSuite -----------
+
 --------- (09_DSuite) ---------
 _______________________________
 
@@ -135,12 +144,14 @@ pop_maps/* - Population maps used for the runs.
 
 _______________________________
 ----- Photos of intergrade ----
+
 --------- (10_photos) ---------
 _______________________________
 
 All of these are photos of the intergrade (center), Ranongga samples (left two), and Kolombangara samples (right two).
 _______________________________
 --- Colonization simulations --
+
 ---- (11_colonization_sims) ---
 _______________________________
 
@@ -154,6 +165,7 @@ summarize_output.py - Script used to summarize the output from slim.
 
 _______________________________
 --- Phylogenetic simulations --
+
 ------- (12_phylo_sims) -------
 _______________________________
 
