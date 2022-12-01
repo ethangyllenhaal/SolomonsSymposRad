@@ -1,0 +1,239 @@
+// By: Ethan Gyllenhaal (egyllenhaal@unm.edu)
+// Last updated: 7November2022
+//
+// Script for running spatially explicit SLiM simulations of colonization of the Solomon Islands
+// Has both short-distance and long-distance dispersal, the latter of which has an overwater component
+// Overwater dispersal has an individual move in a given direction and distance
+//// If it crosses water, it either "lands" when it "sees" shore with a dispersal check, or fails
+// Includes a check every 10 generations to see if each island is colonized
+//// If so, it updates its colonization time
+// Once all islands are colonized, the script ends
+
+initialize() {
+	initializeSLiMModelType("nonWF");
+	defineConstant("K", 10); // carrying capacity density
+	defineConstant("S", 20.0); // spatial competition kernel width
+	
+	// initialize simulation parameters, irrelevant here
+	initializeSLiMOptions(dimensionality="xy", periodicity="xy"); //2D periodic barrier
+	initializeMutationRate(1e-7);
+	initializeMutationType("m1", 0.5, "f", 0.0);
+	m1.convertToSubstitution = T;
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, 99999);
+	initializeRecombinationRate(1e-8);
+	
+	// constants for long distance dispersal
+	defineConstant("step", 5); // granularity of dispersal check
+	defineConstant("mean", mean_dispersal); // mean long distance dispersal distances	
+	
+	// spatial competition
+	initializeInteractionType(1, "xy", reciprocal=T, maxDistance=S*3);
+	i1.setInteractionFunction("n", 500.0, S);
+
+	// spatial mate choice
+	initializeInteractionType(2, "xy", reciprocal=T, maxDistance=20.0);
+	
+	//constants for map and start point, set in command line call
+	
+	// 0 is LGM, otherwise modern
+	if(map == 0){
+		defineConstant("startInt", 21);
+		defineConstant("maptype", "lgm");
+	}
+	else{
+		defineConstant("startInt", 0);
+		defineConstant("maptype", "modern");
+	}
+	
+	// 0 is bukida, otherwise NG
+	if(start == 0){
+		defineConstant("startpoint", "bukida");
+	}
+	else{
+		defineConstant("startpoint", "newgeorgia");
+	}
+}
+
+// function for getting the population sizes for each island, based on XY coordinates
+function (integer)getSizes(object pop){
+	// Y is 1551 - photoshop pixel position
+
+	inds = pop.individuals;
+	
+	// New Georgia
+	ng = inds[((inds.x < 974) & (inds.x > 501) & (inds.y < 814) & (inds.y > 529)) |
+			((inds.x < 700) & (inds.x > 501) & (inds.y < 884) & (inds.y > 814))];
+	// Malaita
+	mal = inds[((inds.x < 1785) & (inds.x > 1492) & (inds.y < 706) & (inds.y > 423)) |
+			((inds.x < 1785) & (inds.x > 1624) & (inds.y < 339) & (inds.y > 268))];
+	// Makira
+	mak = inds[(inds.x < 1975) & (inds.x > 1652) & (inds.y < 268) & (inds.y > 46)];
+	// Russels (not used)
+	rus = inds[(inds.x < 1225) & (inds.x > 1100) & (inds.y < 567) & (inds.y > 445)];
+	// Ulawa (not used)
+	ula = inds[(inds.x < 1860) & (inds.x > 1820) & (inds.y < 365) & (inds.y > 277)];
+	// Bukida (can include edge case islands, but excludes larger accessory islands)
+	buk = setDifference(inds, c(ng, mal, mak, rus, ula));
+	
+	// returns total size, NG size, Malaita size, Makira size, and Bukida size
+	return c(inds.size(), ng.size(), mal.size(), mak.size(), buk.size());
+}
+
+1 early() {
+	// Starting population is 50 individuals
+	sim.addSubpop("p1", 50);
+
+	// initialize map
+	p1.setSpatialBounds(c(0.0, 0.0, 2038, 1551));
+	mapImage = Image("~/wheeler-scratch/solosympos_combo/slim/intervals/interval"+startInt+".png");
+	p1.defineSpatialMap("islands", "xy", floor(10*(mapImage.floatK)),
+		valueRange=c(0.0, 1.0), colors=c("#0000CC", "#55FF22"));
+	
+	// start near a specific map location, depending on what was chosen in command line
+	for (ind in p1.individuals) {
+		do{
+			if(startpoint=="newgeorgia"){
+				ind.x = rnorm(1, 650.0, 50.0);
+				ind.y = rnorm(1, 721.0, 50.0);
+				
+			}
+			// defaults to Bukida
+			else{
+				ind.x = rnorm(1, 120.0, 50.0);
+				ind.y = rnorm(1, 1300.0, 50.0);
+			}
+		}
+		while((p1.spatialMapValue("islands", ind.spatialPosition) == 0.0) | (!p1.pointInBounds(ind.spatialPosition)));
+	}
+	
+	// set values for generation colonized to -1
+	sim.setValue("buk_gen", -1);
+	sim.setValue("ng_gen", -1);
+	sim.setValue("mal_gen", -1);
+	sim.setValue("mak_gen", -1);
+}
+
+1: early() {
+	// evaluate competition
+	i1.evaluate();
+	inds = sim.subpopulations.individuals;
+	competition = i1.totalOfNeighborStrengths(inds);
+	
+	// changing competition to account for local carrying capacity
+	competition = (competition + 1) / (2 * PI * S^2); // +1 includes focal indiv, second rescales by density of comp. kernel
+	inds.fitnessScaling = K / competition * asInteger(inds.age < 5); // use local K instead of global
+	
+	
+	// get the populations of each island, if greater than 10 write generation to globals
+	if(sim.generation % 10 == 1){
+		sizes = getSizes(p1);
+		if(sizes[1] > 10 & sim.getValue("ng_gen") < 0){
+			sim.setValue("ng_gen", sim.generation);
+		}
+		if(sizes[2] > 10 & sim.getValue("mal_gen") < 0){
+			sim.setValue("mal_gen", sim.generation);
+		}
+		if(sizes[3] > 10 & sim.getValue("mak_gen") < 0){
+			sim.setValue("mak_gen", sim.generation);
+		}
+		if(sizes[4] > 10 & sim.getValue("buk_gen") < 0){
+			sim.setValue("buk_gen", sim.generation);
+		}
+	}
+
+}
+
+// evaluate mate distances after survival/viability, before offspring generation
+1: late() {
+	i2.evaluate();
+	
+	// terminate simulation if all islands are occupied, write to output file
+	if(sim.getValue("ng_gen") > 0 & sim.getValue("mal_gen") > 0 & 
+		sim.getValue("mak_gen") > 0 & sim.getValue("buk_gen") > 0){
+		gens = paste(sim.getValue("buk_gen"), sim.getValue("ng_gen"), sim.getValue("mal_gen"), 
+			sim.getValue("mak_gen"), sep="\t");
+		outfile = paste("~/wheeler-scratch/solosympos_combo/slim/output/coltimes_", maptype, "_", startpoint, "_d", mean, ".txt", sep="");
+		writeFile(outfile, gens, append=T);
+		sim.simulationFinished();
+	}
+}
+
+reproduction() {
+	
+	mates = i2.nearestNeighbors(individual, 3); // find 3 nearest neighbors within mating kernel
+	if (!mates.size())
+		return; // if no possible mates, fail		
+	mate = sample(mates, 1);
+	
+	for (i in seqLen(rpois(1,0.5))) { // make children for i in random poisson value, mean of X, lower = more overlap
+		offspring = subpop.addCrossed(individual, mate);
+	}
+}
+
+modifyChild() {
+	// child fails if parent was in water
+	if(p1.spatialMapValue("islands", parent1.spatialPosition) == 0.0){
+		return F;
+	}
+	// Attempt short-distance dispersal
+	else if(runif(1,0,1) > 0.005){
+		attempts = 0;
+		// avoid having an offspring in the water for short distance dispersal
+		// 5 attempts for success to prevent edge cases slowing down simulation
+		do{
+			pos = parent1.spatialPosition + rnorm(2, 0, 5.0);
+			attempts = attempts + 1;
+		}
+		while((p1.spatialMapValue("islands", pos) == 0.0| !p1.pointInBounds(pos)) & attempts < 5);
+		if(p1.spatialMapValue("islands", pos) == 0.0 | !p1.pointInBounds(pos)) {		
+			return F;
+		}		
+		else{
+			child.setSpatialPosition(pos);
+			return T;
+		}
+	}
+	else{
+		// do long distance dispersal
+		distance = rexp(1,mean); // distance traveled
+		degree = runif(1,0,2*PI); // degree of travel in radians
+		crossed_water = F; // variable for if individual crossed water
+		pos = parent1.spatialPosition; // starts at parent position
+		// for each overwater step
+		for(i in 0:floor(distance/step)){
+			pos = pos + c(sin(degree)*step, cos(degree)*step); // modify position based on degree
+			// if water was crossed then land was reached, succeed
+			if(crossed_water & (p1.spatialMapValue("islands", pos) != 0.0 & p1.pointInBounds(pos))){
+				child.setSpatialPosition(pos);
+				return T;
+			}
+			// set water crossing variable to true after water is crossed
+			else{
+				if(p1.spatialMapValue("islands", pos) == 0.0){
+					crossed_water = T;
+				}
+			}
+		}
+		// get final position
+		remainder = (distance/step) - floor(distance/step);
+		pos = pos + c(sin(degree)*remainder, cos(degree)*remainder);
+	}
+	
+	// fail if final position is in water
+	if (p1.spatialMapValue("islands", pos) == 0.0 | !p1.pointInBounds(pos))
+		return F;
+	
+	// otherwise succeed (only reached if land was hit on land step
+	child.setSpatialPosition(pos);
+	return T;
+}
+
+// terminate and write to output if archipelago isn't colonized in 10k gens
+10000 late() { 
+	print(getSizes(p1));
+	gens = paste(sim.getValue("buk_gen"), sim.getValue("ng_gen"), sim.getValue("mal_gen"), 
+		sim.getValue("mak_gen"), sep="\t");
+	outfile = paste("~/wheeler-scratch/solosympos_combo/slim/output/coltimes_", maptype, "_", startpoint, "_d", mean, ".txt", sep="");
+	writeFile(outfile, gens, append=T);
+}

@@ -9,7 +9,7 @@
 #PBS -M egyllenhaal@unm.edu
 
 # By: Ethan Gyllenhaal
-# Last updated: 9 February 2022
+# Last updated: 7 November 2022
 # Torque batch script for running Stacks in a reference-based assembly approach
 # process_radtags is not included here, but command looked like: 
 # process_radtags -f /path/to.fastq.gz -b /path/to/barcodes -o path/to/radseq_demulti/ \
@@ -78,5 +78,11 @@ mv $src/populations/pop_75per_full_indiv/populations.all.phylip $src/populations
 mv $src/populations/pop_75per_full/populations.snps.vcf $src/populations/outputs/solsym_full_75.vcf
 
 ### SNAPP input
-populations -P $src/stacks_out/full -M $src/popmaps/snapp_limit_out -O $src/populations/snapp95_limit --vcf -R .95 --write-random-snp -t 8
-mv $src/populations/snapp95_limit/populations.snps.vcf $src/populations/outputs/solsym_snapp95_limit.vcf
+populations -P $src/stacks_out/full -M $src/popmaps/snapp_even -O $src/populations/snapp100_even --vcf -R 1 --write-random-snp -t 8
+mv $src/populations/snapp100_even/populations.snps.vcf $src/populations/outputs/snapp100_even.vcf
+
+populations -P $src/stacks_out/full -M $src/popmaps/snapp_group -O $src/populations/snapp100_group --vcf -R 1 --write-random-snp -t 8
+mv $src/populations/snapp100_group/populations.snps.vcf $src/populations/outputs/snapp100_group.vcf
+
+populations -P $src/stacks_out/full -M $src/popmaps/snapp_island -O $src/populations/snapp100_island --vcf -R 1 --write-random-snp -t 8
+mv $src/populations/snapp100_island/populations.snps.vcf $src/populations/outputs/snapp100_island.vcf

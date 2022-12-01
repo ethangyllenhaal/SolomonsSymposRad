@@ -1,6 +1,6 @@
 ##########
 # By: Ethan Gyllenhaal
-# Updated 9Feb2022
+# Updated 7Nov2022
 #
 # R script used for generating PCAs for three subsets of Solomons Symposiachrus.
 # Makes each PCA used in the paper, not that modifications were made in illustrator
@@ -26,6 +26,9 @@ setwd('/path/to/directory')
 
 
 ### 75% Solomons
+# set color scheme
+colors_solo <- c("#663399", "#CCCC99", "#99CCCC", "#009999", "#006633", "#009933", "#99CC33",  
+                  "#FF6699", "#FFCCCC", "#FF9999", "#FF6633", "#993333", "#FF3333", "#FF9933", "#FFCC66")
 # load in vcf, convert to genlight
 solo_75_vcf <- read.vcfR("solsym_solomons_75.vcf")
 solo_75_gl <- vcfR2genlight(solo_75_vcf)
@@ -36,9 +39,9 @@ pca_75_solo <- glPca(solo_75_gl, n.cores=4, nf=4)
 # makes un-classed PCA, useful for troubleshooting
 scatter(pca_75_solo, cex=.25)
 # makes classed PCA
-s.class(pca_75_solo$scores[,1:2], pop(solo_75_gl), col=magma(15,begin=.1,end=.9), clab=1, cell=2.5)
+s.class(pca_75_solo$scores[,1:2], pop(solo_75_gl), col=colors_solo, clab=1, cell=2.5)
 # makes plot for PCs 2 and 3, figure not in paper
-s.class(pca_75_solo$scores[,2:3], pop(solo_75_gl), col=magma(15,begin=.1,end=.9), clab=1, cell=2.5)
+s.class(pca_75_solo$scores[,2:3], pop(solo_75_gl), col=colors_solo, clab=1, cell=2.5)
 # make bar plot
 barplot(pca_75_solo$eig/sum(pca_75_solo$eig), main="eigenvalues", col=heat.colors(length(pca_75_solo$eig)))
 # print PC values
@@ -46,23 +49,25 @@ print(pca_75_solo$eig/sum(pca_75_solo$eig))
 
 
 ### 75% Bukida
+colors_bukida <- c("#99CCCC", "#009999", "#006633", "#009933", "#99CC33")
 bukida_75_vcf <- read.vcfR("solsym_bukida_75.vcf")
 bukida_75_gl <- vcfR2genlight(bukida_75_vcf)
 pop(bukida_75_gl) <- c("1Shortlands", "1Shortlands", "1Shortlands", "4Choiseul", "4Choiseul", "4Choiseul", "3Isabel", "3Isabel", "3Isabel", "3Isabel", "3Isabel", "2Ngella", "2Ngella", "2Ngella", "2Ngella", "2Ngella", "5Guadalcanal", "5Guadalcanal", "5Guadalcanal", "5Guadalcanal")
 pca_75_bukida <- glPca(bukida_75_gl, n.cores=4, nf=4)
 scatter(pca_75_bukida, cex=.25)
-s.class(pca_75_bukida$scores[,1:2], pop(bukida_75_gl), col=wes_palette("Darjeeling1", 5, type="continuous"), clab=1, cell=2.5, pch=19)
+s.class(pca_75_bukida$scores[,1:2], pop(bukida_75_gl), col=colors_bukida, clab=1, cell=2.5, pch=19)
 barplot(pca_75_bukida$eig/sum(pca_75_bukida$eig), main="eigenvalues", col=heat.colors(length(pca_75_bukida$eig)))
 print(pca_75_NG$eig/sum(pca_75_bukida$eig))
 
 ### 75% NG
+colors_ng <- c("#FFCC66", "#FF9933", "#FF6633", "#FF3333", "#993333", "#FF9999", "#FFCCCC", "#FF6699")
 NG_75_vcf <- read.vcfR("solsym_NG_75.vcf")
 NG_75_gl <- vcfR2genlight(NG_75_vcf)
 pop(NG_75_gl) <- c("4Kohinggo", "4Kohinggo", "4Kohinggo", "3Kolombangra", "3Kolombangra", "3Kolombangra", "3Kolombangra", "3Kolombangra", "5NewGeorgia", "7Ranongga", "7Ranongga", "7Ranongga", "6Ranongga_hybrid", "2Rendova", "2Rendova", "2Rendova", "2Rendova", "2Rendova", "2Rendova", "1Tetepare", "1Tetepare", "1Tetepare", "1Tetepare", "1Tetepare", "1Tetepare", "8Vella", "8Vella", "8Vella", "8Vella")
 pca_75_NG <- glPca(NG_75_gl, n.cores=4, nf=4)
 scatter(pca_75_NG, cex=.25)
-s.class(pca_75_NG$scores[,1:2], pop(NG_75_gl), col=magma(8,begin=.1,end=.9), clab=1, cell=2.5)
-s.class(pca_75_NG$scores[,2:3], pop(NG_75_gl), col=magma(8,begin=.1,end=.9), clab=1, cell=2.5)
+s.class(pca_75_NG$scores[,1:2], pop(NG_75_gl), col=colors_ng, clab=1, cell=2.5)
+s.class(pca_75_NG$scores[,2:3], pop(NG_75_gl), col=colors_ng, clab=1, cell=2.5)
 barplot(pca_75_NG$eig/sum(pca_75_NG$eig), main="eigenvalues", col=heat.colors(length(pca_75_NG$eig)))
 print(pca_75_NG$eig/sum(pca_75_NG$eig))
 
