@@ -1,5 +1,5 @@
 README by: Ethan Gyllenhaal
-Last updated: 20 May 2025
+Last updated: 2 Sept 2025
 
 Repository for scripts and input files used in a study investigating gene flow and its impacts on phylogeography in a radiation of Symposiachrus monarch flycatchers in the Solomon islands. Everything is in subfolders within a zipped file. If you use something here, please cite us, or contact EFG on who is best to cite (and remind him if he forgets to update the citation):
 
