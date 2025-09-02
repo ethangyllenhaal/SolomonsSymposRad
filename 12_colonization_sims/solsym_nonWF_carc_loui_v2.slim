@@ -1,0 +1,332 @@
+// By: Ethan Gyllenhaal (egyllenhaal@unm.edu)
+// Last updated: 28Aug2024
+//
+// Script for running spatially explicit SLiM simulations of colonization of the Solomon Islands
+// Has both short-distance and long-distance dispersal, the latter of which has an overwater component
+// Overwater dispersal has an individual move in a given direction and distance
+//// If it crosses water, it either "lands" when it "sees" shore with a dispersal check, or fails
+
+
+// Keywords: continuous space, continuous spatial landscape, reprising boundaries
+
+initialize() {
+	initializeSLiMModelType("nonWF");
+	defineConstant("K", 5); // carrying capacity density
+	defineConstant("S", 20.0); // spatial competition kernel width
+	
+	initializeSLiMOptions(dimensionality="xy", periodicity="xy"); //2D periodic barrier
+	initializeMutationRate(1e-7);
+	initializeMutationType("m1", 0.5, "f", 0.0);
+	m1.convertToSubstitution = T;
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, 99999);
+	initializeRecombinationRate(1e-8);
+	
+	// constants for long distance dispersal
+	defineConstant("step", 10); // granularity of dispersal check
+	defineConstant("mean", mean_dispersal); // mean long distance dispersal distances
+	print(paste("Mean is", mean));
+	
+	// spatial competition
+	initializeInteractionType(1, "xy", reciprocal=T, maxDistance=S*3);
+	i1.setInteractionFunction("n", 500.0, S);
+
+	// spatial mate choice
+	initializeInteractionType(2, "xy", reciprocal=T, maxDistance=20.0);
+	
+}
+
+
+// method for calculating nucleotide diversity for an input array of individuals 
+function (float)doPi(object pop1){
+	// only run if the popualtion has individuals
+	if(size(pop1) > 0){
+		return calcHeterozygosity(pop1);
+	}
+	else{
+		return -1.0;
+	}	
+}
+
+function(string)getPi(object pop){
+
+	inds = pop.individuals;
+
+	ng = inds[((inds.x < 2071) & (inds.x > 1615) & (inds.y < 1216) & (inds.y > 897))];
+	mal = inds[((inds.x < 2861) & (inds.x > 2683) & (inds.y < 885) & (inds.y > 751)) |
+		((inds.x < 2789) & (inds.x > 2594) & (inds.y < 1098) & (inds.y > 885))];
+	mak = inds[(inds.x < 3048) & (inds.x > 2781) & (inds.y < 653) & (inds.y > 503)];
+	rus = inds[(inds.x < 2342) & (inds.x > 2169) & (inds.y < 939) & (inds.y > 841)];
+	poss_buk = inds[(inds.x < 2717) & (inds.x > 1073) & (inds.y < 1846) & (inds.y > 677)];
+	buk = setDifference(poss_buk, c(ng, mal, mak, rus));
+	
+	return paste(doPi(ng.genomes), doPi(mal.genomes), doPi(mak.genomes), doPi(buk.genomes), sep="\t");
+}
+
+function (integer)doPrivate(object sub, object full){
+	if(size(sub) > 0 & size(full)>size(sub)){
+		sub_freqs = sub.genomes.mutationFrequenciesInGenomes();
+		other_freqs = setDifference(full, sub).genomes.mutationFrequenciesInGenomes();
+		count = 0;
+		for (m in 0:(size(sub_freqs)-1)){
+			if(sub_freqs[m] < 1 & other_freqs[m] == 1.0){
+				count = count + 1;
+			}
+			else if(sub_freqs[m] > 0.0 & other_freqs[m] == 0.0){
+				count = count +1;
+			}
+		}
+	}
+	else{
+		count=-1;
+	}
+	return count;
+}
+
+
+function (string)getPrivateAlleles(object pop){
+	inds = pop.individuals;
+		
+	ng = inds[((inds.x < 2071) & (inds.x > 1615) & (inds.y < 1216) & (inds.y > 897))];
+	mal = inds[((inds.x < 2861) & (inds.x > 2683) & (inds.y < 885) & (inds.y > 751)) |
+		((inds.x < 2789) & (inds.x > 2594) & (inds.y < 1098) & (inds.y > 885))];
+	mak = inds[(inds.x < 3048) & (inds.x > 2781) & (inds.y < 653) & (inds.y > 503)];
+	rus = inds[(inds.x < 2342) & (inds.x > 2169) & (inds.y < 939) & (inds.y > 841)];
+	poss_buk = inds[(inds.x < 2717) & (inds.x > 1073) & (inds.y < 1846) & (inds.y > 677)];
+	buk = setDifference(poss_buk, c(ng, mal, mak, rus));		
+	
+	if (size(ng) >= 10){	ngS = sample(ng, 10); }
+	else { ngS = c(); }
+	if (size(mal) >= 10){	malS = sample(mal, 10); }
+	else { malS = c(); }
+	if (size(mak) >= 10){	makS = sample(mak, 10); }
+	else { makS = c(); }
+	if (size(buk) >= 10){	bukS = sample(buk, 10); }
+	else { bukS = c(); }
+
+	subset = c(ngS, malS, makS, bukS);
+	if (size(ng) >= 10){	ng_out = doPrivate(ngS, subset); }
+	else { ng_out = -1; }
+	if (size(mal) >= 10){	mal_out = doPrivate(malS, subset); }
+	else { mal_out = -1; }
+	if (size(mak) >= 10){	mak_out = doPrivate(makS, subset); }
+	else { mak_out = -1; }
+	if (size(buk) >= 10){	buk_out = doPrivate(bukS, subset); }
+	else { buk_out = -1; }
+	
+	return paste(ng_out, mal_out, mak_out, buk_out, sep="\t");
+}
+
+function (integer)getNum(object pop){
+	// Y is 2021 - photoshop pixel position
+
+	inds = pop.individuals;
+	
+	ng = inds[((inds.x < 2071) & (inds.x > 1615) & (inds.y < 1216) & (inds.y > 897))];
+	mal = inds[((inds.x < 2861) & (inds.x > 2683) & (inds.y < 885) & (inds.y > 751)) |
+		((inds.x < 2789) & (inds.x > 2594) & (inds.y < 1098) & (inds.y > 885))];
+	mak = inds[(inds.x < 3048) & (inds.x > 2781) & (inds.y < 653) & (inds.y > 503)];
+	rus = inds[(inds.x < 2342) & (inds.x > 2169) & (inds.y < 939) & (inds.y > 841)];
+	poss_buk = inds[(inds.x < 2717) & (inds.x > 1073) & (inds.y < 1846) & (inds.y > 677)];
+	buk = setDifference(poss_buk, c(ng, mal, mak, rus));
+	
+	return c(inds.size(), ng.size(), mal.size(), mak.size(), buk.size());
+}
+
+function (integer)getTag(object ind){
+	// PNG islands
+	if(((ind.x < 1282) & (ind.x > 0) & (ind.y < 1000) & (ind.y > 0))){
+		return -100;
+	}
+	// NG
+	else if(((ind.x < 2071) & (ind.x > 1615) & (ind.y < 1216) & (ind.y > 897))){
+		return 1;
+	}
+	// Mal
+	else if (((ind.x < 2861) & (ind.x > 2683) & (ind.y < 885) & (ind.y > 751)) |
+		 ((ind.x < 2789) & (ind.x > 2594) & (ind.y < 1098) & (ind.y > 885))){
+		return 2;
+	}
+	// Mak
+	else if ((ind.x < 3048) & (ind.x > 2781) & (ind.y < 653) & (ind.y > 503)){
+		return 3;
+	}
+	// Rus
+	else if ((ind.x < 2342) & (ind.x > 2169) & (ind.y < 939) & (ind.y > 841)){
+		return -100;
+	}
+	// Buk
+	else if (((ind.x < 2717) & (ind.x > 1073) & (ind.y < 1846) & (ind.y > 677))){
+		return 0;
+	}
+	else{
+		return -100;
+	}
+}
+
+
+1 early() {
+	sim.addSubpop("p1", 100);
+
+	p1.setSpatialBounds(c(0.0, 0.0, 3346, 2021));
+	mapImage = Image("~/efg/solo_slim/maps/loui_interval0.png");
+	p1.defineSpatialMap("islands", "xy", floor(10*(mapImage.floatK)),
+		valueRange=c(0.0, 1.0), colors=c("#0000CC", "#55FF22"));
+	
+	// start near a specific map location
+	for (ind in p1.individuals) {
+		do{
+			// PNG islands
+			ind.x = rnorm(1, 550.0, 300.0);
+			ind.y = rnorm(1, 337.0, 200.0);
+			
+			ind.tag = getTag(ind);			
+		}
+		while((p1.spatialMapValue("islands", ind.spatialPosition) == 0.0) | (!p1.pointInBounds(ind.spatialPosition)));
+	}
+	
+	sim.setValue("buk_gen", -1);
+	sim.setValue("ng_gen", -1);
+	sim.setValue("mal_gen", -1);
+	sim.setValue("mak_gen", -1);
+	sim.setValue("buk_src", 0.0);
+	sim.setValue("ng_src", 0.0);
+	sim.setValue("mal_src", 0.0);
+	sim.setValue("mak_src", 0.0);
+
+}
+
+1: early() {
+
+	i1.evaluate(sim.subpopulations);
+	inds = sim.subpopulations.individuals;
+	competition = i1.totalOfNeighborStrengths(inds);
+	
+	// changing competition to account for K
+	competition = (competition + 1) / (2 * PI * S^2); // +1 includes focal indiv, second rescales by density of comp. kernel
+	//inds.fitnessScaling = K / competition;
+	//K_local = K; // local K
+	inds.fitnessScaling = K / competition * asInteger(inds.age < 5); // use local K instead of global
+	//catn(mean(inds.fitnessScaling));
+	
+	
+	// get the populations of each island, if greater than 10 write generation to globals
+	if(sim.cycle % 10 == 1 & !(sim.getValue("mal_gen") > 0 & sim.getValue("ng_gen") > 0 & 
+		sim.getValue("mak_gen") > 0 & sim.getValue("buk_gen") > 0)){
+		ng = inds[((inds.x < 2071) & (inds.x > 1615) & (inds.y < 1216) & (inds.y > 897))];
+		mal = inds[((inds.x < 2861) & (inds.x > 2683) & (inds.y < 885) & (inds.y > 751)) |
+			((inds.x < 2789) & (inds.x > 2594) & (inds.y < 1098) & (inds.y > 885))];
+		mak = inds[(inds.x < 3048) & (inds.x > 2781) & (inds.y < 653) & (inds.y > 503)];
+		rus = inds[(inds.x < 2342) & (inds.x > 2169) & (inds.y < 939) & (inds.y > 841)];
+		poss_buk = inds[(inds.x < 2717) & (inds.x > 1073) & (inds.y < 1846) & (inds.y > 677)];
+		buk = setDifference(poss_buk, c(ng, mal, mak, rus));
+		if(size(ng) > 50 & sim.getValue("ng_gen") < 0){
+			sim.setValue("ng_src", mean(ng.tag));
+			sim.setValue("ng_gen", sim.cycle);
+		}
+		if(size(mal) > 50 & sim.getValue("mal_gen") < 0){
+			sim.setValue("mal_src", mean(mal.tag));
+			sim.setValue("mal_gen", sim.cycle);
+		}
+		if(size(mak) > 50 & sim.getValue("mak_gen") < 0){
+			sim.setValue("mak_src", mean(mak.tag));
+			sim.setValue("mak_gen", sim.cycle);
+		}
+		if(size(buk) > 50 & sim.getValue("buk_gen") < 0){
+			sim.setValue("buk_src", mean(buk.tag));
+			sim.setValue("buk_gen", sim.cycle);
+		}
+	}
+
+}
+
+// eval mate distances after survival/viability, before offspring generation
+1: late() {
+	i2.evaluate(sim.subpopulations);
+}
+
+reproduction() {
+	mates = i2.nearestNeighbors(individual, 3); // find 3 nearest neighbors within mating kernel
+	if (!mates.size())
+		return; // if no possible mates, fail		
+	mate = sample(mates, 1);
+	
+	for (i in seqLen(rpois(1,0.5))) { // make children for i in random poisson value, mean of X, lower = more overlap
+		offspring = subpop.addCrossed(individual, mate);
+	}
+
+}
+
+modifyChild() {
+	if(p1.spatialMapValue("islands", parent1.spatialPosition) == 0.0){
+		return F;
+	}
+	else if(runif(1,0,1) > 0.005){
+		attempts = 0;
+		// avoid having an offspring in the water for short distance dispersal
+		do{
+			pos = parent1.spatialPosition + rnorm(2, 0, 5.0);
+			attempts = attempts + 1;
+		}
+		while((p1.spatialMapValue("islands", pos) == 0.0| !p1.pointInBounds(pos)) & attempts < 5);
+		if(p1.spatialMapValue("islands", pos) == 0.0 | !p1.pointInBounds(pos)) {		
+			return F;
+		}		
+		else{
+			child.setSpatialPosition(pos);
+			child.tag = parent1.tag;
+			return T;
+		}
+	}
+	else{
+		// do long distance dispersal
+		distance = rexp(1,mean); // distance traveled
+		degree = runif(1,0,2*PI); // degree of travel in radians
+		crossed_water = F;
+		pos = parent1.spatialPosition;
+		for(i in 0:floor(distance/step)){
+			pos = pos + c(sin(degree)*step, cos(degree)*step);
+			if(crossed_water & (p1.spatialMapValue("islands", pos) != 0.0 & p1.pointInBounds(pos))){				
+				child.setSpatialPosition(pos);
+				if(getTag(child) != getTag(parent1)){				
+					child.tag = getTag(parent1);		
+				}
+				else{
+					child.tag = parent1.tag;
+				}
+				return T;
+			}
+			else{
+				if(p1.spatialMapValue("islands", pos) == 0.0){
+					crossed_water = T;
+				}
+			}
+		}
+		remainder = (distance/step) - floor(distance/step);
+		pos = pos + c(sin(degree)*remainder, cos(degree)*remainder);
+	}
+	
+	// prevent dispersal into water
+	if (p1.spatialMapValue("islands", pos) == 0.0 | !p1.pointInBounds(pos))
+		return F;
+	
+	child.setSpatialPosition(pos);
+	child.tag = parent1.tag;
+	return T;
+}
+30000 late() {
+
+	out_src = paste("~/efg/solo_slim/output_loui/source_d", mean, ".txt", sep="");
+	out_gen = paste("~/efg/solo_slim/output_loui/coltimes_d", mean, ".txt", sep="");
+	out_stats = paste("~/efg/solo_slim/output_loui/sumstats_d", mean, ".txt", sep="");
+	
+	gens = paste(sim.getValue("ng_gen"), sim.getValue("mal_gen"), sim.getValue("mak_gen"), 
+		sim.getValue("buk_gen"), sep="\t");
+	src = paste(sim.getValue("ng_src"), sim.getValue("mal_src"), sim.getValue("mak_src"), 
+		sim.getValue("buk_src"), sep="\t");
+	stats = paste(getPi(p1), getPrivateAlleles(p1), sep="\t");
+	
+	writeFile(out_gen, gens, append=T);
+	writeFile(out_src, src, append=T);
+	writeFile(out_stats, stats, append=T);
+}
