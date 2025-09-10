@@ -1,5 +1,5 @@
 README by: Ethan Gyllenhaal
-Last updated: 2 Sept 2025
+Last updated: 10 Sept 2025
 
 Repository for scripts and input files used in a study investigating gene flow and its impacts on phylogeography in a radiation of Symposiachrus monarch flycatchers in the Solomon islands. Everything is in subfolders within a zipped file. If you use something here, please cite us, or contact EFG on who is best to cite (and remind him if he forgets to update the citation):
 
@@ -121,24 +121,35 @@ All of these are photos of the intergrade (center), Ranongga samples (left two),
 
 ### Colonization simulations (12_colonization_sims)
 
-solomons_colonize_nonWF.slim - Slim script used to run colonization simulations.
+solsym_nonWF_carc_loui_v2.slim - Slim script used to run colonization simulations.
 
-run_solomons_colonize.slurm - Slurm script used to run simulations in parallel. Requires a conda environment with SLiM.
+run_loui_colonize.slurm- Slurm script used to run simulations in parallel. Requires a conda environment with SLiM.
 
 drive_summarize.sh - Script used to modify output then run python script.
 
-summarize_output.py - Script used to summarize the output from slim.
+summarize_loui.py - Script used to summarize the output from slim.
+
+summarized_\*.txt - Text files output by summarize script. Each row is for a given dispersal value. Three files correspond to the proportion of simulations where a given island group met specific conditions (columns 2, 3, 4, and 5 correspond to New Georgia, Malaita, Makira, and Bukida respectively): "first" means which was colonized first, "last" means which was colonized last, and "success" means which islands were successfully colonized **of the simulations where the Solomons were colonzied**. The path file is colonization paths, with columns corresponding to NLKB, NLBK, NKLB, NKBL, NBLK, NBKL, LNKB, LNBK, LKNB, LKBN, LBNK, LBKN, KNLB, KNBL, KLNB, KLBN, KBNL, KBLN, BNLK, BNKL, BLNK, BLKN, BKNL, then BKLN (B=Bukida, N=New Georgia, L=Malaita, K=Makira).
+
+slim_sankey.R - R script for plotting colonization paths in a Sankey diagram. Note that paths are converted from proportions to numbers and summed across all simulations, then assigned manually in R (couldn't figure out a smart way to do it).
 
 ### Phylogenetic simulations (13_phylo_sims)
 
-solomons_phylo_msp.py - Script for running msprime simulations, made to be run in parallel.
+new_solo_phylo_msp.py - Script for running msprime simulations, made to be run in parallel.
 
-run_solomons_msp.slurm - Slurm batch script for running replicates of msprime followed by RAxML. Requires a conda environment with msprime and RAxML (plus other python packages).
+run_solomons_msp.slurm - Slurm batch script for running replicates of msprime followed by IQTREE. Requires a conda environment with msprime and IQTREE (plus other python packages).
 
-make_variant_fasta.sh - Script for removing invariant sites to keep alignment files smaller for storage purposes.
+variant_fasta.sh - Script for removing invariant sites to keep alignment files smaller for storage purposes.
 
-output_trees.zip - Zipped directory of trees output by RAxML. The "d" corresponds to dispersal distance (0.0001 acts as 0) and r is the replicate number.
+combined_sumstats.sh - Simple script for combining summary stat files in parallel.
+ 
+summarize_\*.txt - Tables summarizing topologies from simulations that started in Bukida (_buk) or Makira (_mak). Columns are the row name (stem name), 15 possible topologies (values are counts), count of non-monophyletic trees, count of poorly resolved trees, the stem name of the simulation set, dispersal distance, effective population size, post-split time, and split interval.
 
+summarize_trees_bs.py - Script for parsing and classifying topologies from set of trees.
+
+summarize_trees.slurm - Slurm script for running summarize_trees_bs.py.
+
+plot_msp_heatmap.R - Script for plotting heatmap of phylogenetic simulation results.
 
 ### Additional summary simulation files (14_bonus_sim_stats)
 
