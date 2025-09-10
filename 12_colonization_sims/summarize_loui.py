@@ -112,7 +112,6 @@ def main():
 
 
     # works through for colonization paths
-    # runs seperately for NG and Bukida starts
     path_file = open("{0}_path.txt".format(out_stem), 'w')
     for file in os.listdir(in_path):
         if fnmatch.fnmatch(file, "coltimes*.txt"):
